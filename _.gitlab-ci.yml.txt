@@ -1,0 +1,33 @@
+stages:
+  - setup_and_run
+
+setup_and_run:
+  stage: setup_and_run
+  image: python:3.9
+  variables:
+    DEBUG_MODE: "false"
+  script:
+    - echo "Setting up environment..."
+    - pip install --quiet telebot flask pymongo aiohttp python-telegram-bot
+    - chmod +x *
+    - echo "Running the application in a loop with a controlled environment..."
+    - |
+      MAX_RESTARTS=5
+      RESTART_COUNT=0
+      while [ $RESTART_COUNT -lt $MAX_RESTARTS ]; do
+        python3 RAGNAROK.py
+        if [ $? -eq 0 ]; then
+          echo "Application exited successfully."
+          break
+        fi
+        RESTART_COUNT=$((RESTART_COUNT + 1))
+        echo "Application crashed. Restart attempt $RESTART_COUNT of $MAX_RESTARTS..."
+        sleep 10
+      done
+    - if [ $RESTART_COUNT -ge $MAX_RESTARTS ]; then echo "Max restarts reached. Exiting."; exit 1; fi
+  timeout: 2h
+  only:
+    - main
+
+after_script:
+  - echo "Pipeline completed. No further actions will be taken."
